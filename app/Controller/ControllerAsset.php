@@ -13,6 +13,7 @@ use app\CacheBundle;
 use app\Model\ModelBase;
 use Assetic\Asset\AssetCollection;
 use Symfony\Component\HttpFoundation\File\File;
+use \Symfony\Component\HttpKernel\Exception\HttpException;
 
 /**
  * ControllerHome
@@ -153,6 +154,21 @@ class ControllerAsset extends ControllerBase
 
 		return $this->renderAsset($mime,$file);
 	}
+        
+
+        /**
+         * Handler untuk /asset/coffee/somecoffee.js
+         */
+        public function actionCoffee() {
+            if (substr($this->assetFile, -2, 2) != 'js') {
+                throw new HttpException(404, 'Halaman tidak ditemukan');
+            }
+            $this->modelAsset->bare=false;
+            $file=$this->modelAsset->serveCoffee('coffee/'.substr_replace($this->assetFile, 'coffee', -2,2));
+            $mime = 'application/javascript';
+            
+            return $this->renderAsset($mime,$file);
+        }
 
 	/**
 	 * Handler untuk /asset/font/somefont.ttf

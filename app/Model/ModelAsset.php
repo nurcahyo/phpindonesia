@@ -13,6 +13,7 @@ use app\CacheManager;
 use app\CacheBundle;
 use Assetic\FilterManager;
 use Assetic\Filter\LessphpFilter;
+use app\CoffeePhpFilter;
 use Assetic\Filter\Yui;
 use Assetic\Factory\AssetFactory;
 use Assetic\Extension\Twig\AsseticExtension;
@@ -41,8 +42,10 @@ class ModelAsset extends ModelBase
 	 * @var bool
 	 */
 	private $yuiSupport = false;
+        
+        public $bare=true;
 
-	/**
+        /**
 	 * Constructor
 	 */
 	public function __construct(Parameter $parameter) {
@@ -105,6 +108,13 @@ class ModelAsset extends ModelBase
 	public function setFile($asset) {
 		return new FileAsset($this->path . $asset);
 	}
+        
+        /*
+         * Provider for glob asset path
+         */
+        public function setGlob($asset,$filter=array()){
+            return new GlobAsset("{$this->path}{$asset}/*",$filter);
+        }
 
 	/**
 	 * Set for cache version
@@ -185,6 +195,7 @@ class ModelAsset extends ModelBase
 				case 'js':
 					$filters = array($this->filter['js']);
 					break;
+                                    
 			}
 
 			// Only for browser eye
@@ -198,4 +209,21 @@ class ModelAsset extends ModelBase
 
 		return !isset($collection) ? new CacheBundle() : $collection;
 	}
+        
+        public function serveCoffee($source){
+            $path = realpath("$this->path/$source");
+            if(is_dir($path)){
+                $coffees = array(
+                    $this->setGlob($source,array(new CoffeePhpFilter(array('bare'=>  $this->bare))))
+                    );
+            }elseif(is_file($path)){
+                $coffees=array(
+                    $this->setFile($source,array(new CoffeePhpFilter(array('bare'=>  $this->bare))))
+                    );
+            }
+            $file=$this->buildCollection($coffees,'js');
+            // Set the cache version
+            $this->setCollectionCacheVersion($file, $file->dump());
+            return $file;
+        }
 }
